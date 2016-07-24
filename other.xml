@@ -114,4 +114,16 @@
   <component name="RefactoringSettings">
     <option name="INTRODUCE_FIELD_VISIBILITY" value="private" />
   </component>
+  <component name="SvnApplicationSettings">
+    <option name="myCheckoutURLs">
+      <list>
+        <option value="https://github.com/sangfoam/Android_Studio_ZHBJ.git" />
+      </list>
+    </option>
+    <option name="myTypedURLs">
+      <list>
+        <option value="https://github.com/sangfoam/Android_Studio_ZHBJ.git" />
+      </list>
+    </option>
+  </component>
 </application>
