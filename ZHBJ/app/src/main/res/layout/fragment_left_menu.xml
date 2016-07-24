@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#000">
+
+    <!--listSelector的作用就是用于设置点击是否有效果，如果不要效果这可以设置为@null-->
+    <!--如果想要其它效果则可以创建一个选择器-->
+    <ListView
+        android:id="@+id/lv_list"
+        android:layout_marginTop="40dp"
+        android:listSelector="@android:color/transparent"
+        android:divider="@android:color/transparent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+    </ListView>
+
+</RelativeLayout>
