@@ -1,7 +1,6 @@
 package com.jxust.asus.zhbj.base;
 
 import android.app.Activity;
-import android.graphics.Bitmap;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.View;
@@ -49,7 +48,7 @@ public class TabDetailPager extends BaseMenuDetailPager {
     @Override
     public View initView() {
         View view = View.inflate(mActivity, R.layout.tab_detail_pager, null);
-        ViewUtils.inject(this,view);    // 对xUtils进行注入操作
+        ViewUtils.inject(this, view);    // 对xUtils进行注入操作
         return view;
     }
 
@@ -92,13 +91,15 @@ public class TabDetailPager extends BaseMenuDetailPager {
     }
 
     /**
-     *头条新闻适配器
+     * 头条新闻适配器
      */
-    class TopNewsAdapter extends PagerAdapter{
+    class TopNewsAdapter extends PagerAdapter {
 
         private BitmapUtils utils;
-        public TopNewsAdapter{
+
+        public TopNewsAdapter() {
             utils = new BitmapUtils(mActivity);
+            utils.configDefaultLoadingImage(R.mipmap.topnews_item_default);         // 设置默认加载的图片
         }
 
         @Override
@@ -108,7 +109,7 @@ public class TabDetailPager extends BaseMenuDetailPager {
 
         @Override
         public boolean isViewFromObject(View view, Object object) {
-            return view==object;
+            return view == object;
         }
 
         @Override
@@ -116,6 +117,9 @@ public class TabDetailPager extends BaseMenuDetailPager {
             ImageView image = new ImageView(mActivity);
             image.setImageResource(R.mipmap.topnews_item_default);
             image.setScaleType(ImageView.ScaleType.FIT_XY);     // 基于控件大小来填充图片s
+
+            TabData.TopNewsData topNewsData = mTabDetailData.data.topnews.get(position);
+            utils.display(image, topNewsData.topimage);  // 传递imageView对象和图片地址
 
             container.addView(image);
             return image;

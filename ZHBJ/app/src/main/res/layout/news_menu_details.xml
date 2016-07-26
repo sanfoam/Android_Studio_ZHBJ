@@ -26,8 +26,7 @@
 
     </LinearLayout>
 
-    <!--使用自定义的ViewPager-->
-    <com.jxust.asus.zhbj.view.HorizontalViewPager
+    <android.support.v4.view.ViewPager
         android:id="@+id/vp_menu_detail"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
