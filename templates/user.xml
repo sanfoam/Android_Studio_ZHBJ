@@ -1,6 +1,0 @@
-<templateSet group="user">
-  <template name="toast" value="Toast.makeText(getApplicationContext(),&quot;$cursor$&quot;,0).show();" description="toast" toReformat="false" toShortenFQNames="true">
-    <variable name="cursor" expression="" defaultValue="" alwaysStopAt="true" />
-    <context />
-  </template>
-</templateSet>
