@@ -6,6 +6,8 @@ import android.support.v4.view.ViewPager;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.jeremyfeinstein.slidingmenu.lib.SlidingMenu;
+import com.jxust.asus.zhbj.MainActivity;
 import com.jxust.asus.zhbj.R;
 import com.jxust.asus.zhbj.base.BaseMenuDetailPager;
 import com.jxust.asus.zhbj.base.TabDetailPager;
@@ -18,13 +20,13 @@ import java.util.ArrayList;
 
 /**
  * Created by asus on 2016/7/22.
- * <p/>
+ * <p/>1
  * 菜单详情页-新闻
  *
  * @author Administrator
  * @time 2016/7/22 15:48
  */
-public class NewsMenuDetailPager extends BaseMenuDetailPager {
+public class NewsMenuDetailPager extends BaseMenuDetailPager implements ViewPager.OnPageChangeListener{
 
     private ViewPager mViewPager;
 
@@ -49,6 +51,8 @@ public class NewsMenuDetailPager extends BaseMenuDetailPager {
 
         // 初始化自定义控件TabPageIndicator
         mIndicator = (TabPageIndicator) view.findViewById(R.id.indicator);
+
+        mViewPager.setOnPageChangeListener(this);       // 设置滑动监听
 
         return view;
     }
@@ -75,6 +79,28 @@ public class NewsMenuDetailPager extends BaseMenuDetailPager {
     public void nextPager(View view) {
         int currentItem = mViewPager.getCurrentItem();
         mViewPager.setCurrentItem(++currentItem);
+    }
+
+    @Override
+    public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+    }
+
+    @Override
+    public void onPageSelected(int position) {
+        MainActivity mainUI = (MainActivity) mActivity;
+        SlidingMenu slidingMenu = mainUI.getSlidingMenu();
+
+        if(position == 0){
+            slidingMenu.setTouchModeAbove(SlidingMenu.TOUCHMODE_FULLSCREEN);    // 可以拉出SlidingMenu
+        } else {
+            slidingMenu.setTouchModeAbove(SlidingMenu.TOUCHMODE_NONE);  // 不能拉出SlidingMenu
+        }
+    }
+
+    @Override
+    public void onPageScrollStateChanged(int state) {
+
     }
 
     class MenuDetailAdapter extends PagerAdapter {

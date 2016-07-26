@@ -7,7 +7,7 @@ import android.view.MotionEvent;
 
 /**
  * Created by asus on 2016/7/24.
- * 11个页签水平滑动的ViewPager
+ * 11个页签水平滑动的ViewPager,暂时不用
  * @author Administrator
  * @time 2016/7/24 12:01
  */
