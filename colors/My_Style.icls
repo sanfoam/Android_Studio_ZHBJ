@@ -34,22 +34,32 @@
     </option>
     <option name="LOGCAT_ASSERT_OUTPUT">
       <value>
-        <option name="FOREGROUND" value="aecff" />
+        <option name="FOREGROUND" value="8f0005" />
       </value>
     </option>
     <option name="LOGCAT_DEBUG_OUTPUT">
       <value>
-        <option name="FOREGROUND" value="b3bbbb" />
+        <option name="FOREGROUND" value="70bb" />
+      </value>
+    </option>
+    <option name="LOGCAT_ERROR_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="ff0006" />
       </value>
     </option>
     <option name="LOGCAT_INFO_OUTPUT">
       <value>
-        <option name="FOREGROUND" value="1bb0c" />
+        <option name="FOREGROUND" value="48bb31" />
       </value>
     </option>
     <option name="LOGCAT_VERBOSE_OUTPUT">
       <value>
-        <option name="FOREGROUND" value="a5bbaf" />
+        <option name="FOREGROUND" value="bbbbbb" />
+      </value>
+    </option>
+    <option name="LOGCAT_WARNING_OUTPUT">
+      <value>
+        <option name="FOREGROUND" value="bbbb23" />
       </value>
     </option>
   </attributes>
