@@ -20,13 +20,13 @@ import java.util.ArrayList;
 
 /**
  * Created by asus on 2016/7/22.
- * <p/>1
+ * <p/>
  * 菜单详情页-新闻
  *
  * @author Administrator
  * @time 2016/7/22 15:48
  */
-public class NewsMenuDetailPager extends BaseMenuDetailPager implements ViewPager.OnPageChangeListener{
+public class NewsMenuDetailPager extends BaseMenuDetailPager implements ViewPager.OnPageChangeListener {
 
     private ViewPager mViewPager;
 
@@ -52,7 +52,9 @@ public class NewsMenuDetailPager extends BaseMenuDetailPager implements ViewPage
         // 初始化自定义控件TabPageIndicator
         mIndicator = (TabPageIndicator) view.findViewById(R.id.indicator);
 
-        mViewPager.setOnPageChangeListener(this);       // 设置滑动监听
+//        mViewPager.setOnPageChangeListener(this);// 当ViewPager和Indicator绑定时，需要把滑动监听设置给Indicator而不是ViewPager
+
+        mIndicator.setOnPageChangeListener(this);   // 给indicaor设置页面滑动监听
 
         return view;
     }
@@ -88,13 +90,12 @@ public class NewsMenuDetailPager extends BaseMenuDetailPager implements ViewPage
 
     @Override
     public void onPageSelected(int position) {
-        MainActivity mainUI = (MainActivity) mActivity;
-        SlidingMenu slidingMenu = mainUI.getSlidingMenu();
-
-        if(position == 0){
-            slidingMenu.setTouchModeAbove(SlidingMenu.TOUCHMODE_FULLSCREEN);    // 可以拉出SlidingMenu
+        MainActivity mainUi = (MainActivity) mActivity;
+        SlidingMenu slidingMenu = mainUi.getSlidingMenu();
+        if (position == 0) {        // 只有在第一个页面(北京)，侧边栏才允许出来
+            slidingMenu.setTouchModeAbove(SlidingMenu.TOUCHMODE_FULLSCREEN);    // 允许滑动出侧边栏
         } else {
-            slidingMenu.setTouchModeAbove(SlidingMenu.TOUCHMODE_NONE);  // 不能拉出SlidingMenu
+            slidingMenu.setTouchModeAbove(SlidingMenu.TOUCHMODE_NONE);      // 不允许滑动出侧边栏
         }
     }
 
