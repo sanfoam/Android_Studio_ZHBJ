@@ -19,13 +19,14 @@
             android:id="@+id/btn_next"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
             android:background="@android:color/transparent"
             android:padding="5dp"
-            android:layout_gravity="center_vertical"
             android:src="@mipmap/news_cate_arr" />
 
     </LinearLayout>
 
+    <!--使用自定义的ViewPager-->
     <android.support.v4.view.ViewPager
         android:id="@+id/vp_menu_detail"
         android:layout_width="match_parent"
