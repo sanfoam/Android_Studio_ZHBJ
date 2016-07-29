@@ -6,6 +6,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
+import android.widget.AbsListView;
+import android.widget.AbsListView.OnScrollListener;
+import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -22,12 +25,13 @@ import java.util.Date;
  * @author Administrator
  * @time 2016/7/26 17:22
  */
-public class RefreshListView extends ListView {
+public class RefreshListView extends ListView implements OnScrollListener, AdapterView.OnItemClickListener {
 
     private static final int STATE_PULL_REFRESH = 0;    // 下拉刷新
     private static final int STATE_RELEASE_REFRESH = 1; // 松开刷新
     private static final int STATE_REFRESHING = 2;      // 正在刷新
     OnRefreshListener mListener;
+    OnItemClickListener mItemClickListener;
     private int mCurrentState = STATE_PULL_REFRESH;     // 当前状态
     private int startY = -1;
     private int endY;
@@ -39,6 +43,9 @@ public class RefreshListView extends ListView {
     private ProgressBar pbProgress;
     private RotateAnimation animUp;
     private RotateAnimation animDown;
+    private View mFooterView;
+    private int mFooterViewHeight;
+    private boolean isLoadingMore = false;  // 默认没在加载
 
     public RefreshListView(Context context) {
         super(context);
@@ -51,6 +58,7 @@ public class RefreshListView extends ListView {
         initHeaderView();
         initFooterView();
     }
+
 
     public RefreshListView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
@@ -80,14 +88,42 @@ public class RefreshListView extends ListView {
         tvTime.setText("最后刷新时间" + getCurrentTime());
     }
 
-
     /**
      * 初始化脚布局
      */
-    private void initFooterView(){
+    private void initFooterView() {
+        mFooterView = View.inflate(getContext(), R.layout.refresh_footer, null);
+        this.addFooterView(mFooterView);
 
+        mFooterView.measure(0, 0);
+
+        mFooterViewHeight = mFooterView.getMeasuredHeight();
+
+        mFooterView.setPadding(0, -mFooterViewHeight, 0, 0);       // 隐藏脚布局
+
+        this.setOnScrollListener(this);
     }
 
+    @Override
+    public void onScrollStateChanged(AbsListView absListView, int scrollState) {
+        if (scrollState == SCROLL_STATE_IDLE || scrollState == SCROLL_STATE_FLING) {
+            if (getLastVisiblePosition() == getCount() - 1 && !isLoadingMore) {   // 表示滑动到最后
+                System.out.println("到底了....");
+                mFooterView.setPadding(0, 0, 0, 0);
+                setSelection(getCount() - 1);   // 该表listView的显示位置
+                isLoadingMore = true;   // 将状态变成正在加载
+
+                if (mListener != null) {
+                    mListener.onLoadMore();
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onScroll(AbsListView absListView, int i, int i1, int i2) {
+
+    }
 
     /**
      * 监听用户的触摸操作
@@ -205,15 +241,20 @@ public class RefreshListView extends ListView {
      * 收起下拉刷新的控件
      */
     public void onRefreshComplete(boolean success) {
-        mCurrentState = STATE_PULL_REFRESH; // 将刷新状态变成默认的状态
-        tvTitle.setText("下拉刷新");
-        ivArrow.setVisibility(View.VISIBLE);
-        pbProgress.setVisibility(View.INVISIBLE);
+        if (isLoadingMore) {      // 如果正在加载更多
+            mFooterView.setPadding(0, -mFooterViewHeight, 0, 0);   // 隐藏脚布局
+            isLoadingMore = false;
+        } else {
+            mCurrentState = STATE_PULL_REFRESH; // 将刷新状态变成默认的状态
+            tvTitle.setText("下拉刷新");
+            ivArrow.setVisibility(View.VISIBLE);
+            pbProgress.setVisibility(View.INVISIBLE);
 
-        mHeaderView.setPadding(0, -mHeaderViewHeight, 0, 0);   // 隐藏HeaderView
+            mHeaderView.setPadding(0, -mHeaderViewHeight, 0, 0);   // 隐藏HeaderView
 
-        if (success) {
-            tvTime.setText("最后刷新时间" + getCurrentTime());
+            if (success) {
+                tvTime.setText("最后刷新时间" + getCurrentTime());
+            }
         }
     }
 
@@ -228,7 +269,28 @@ public class RefreshListView extends ListView {
         return format.format(new Date());
     }
 
-    public interface OnRefreshListener {
-        public void onRefresh();
+    @Override
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        super.setOnItemClickListener(this); // 将自身传递给底层，所以会将相应的操作交给onItemClick方法
+        mItemClickListener = listener;
+
     }
+
+    @Override
+    public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+        if (mItemClickListener != null) {
+            // 这样子在TabDetailPager中获取点击事件的位置就会自动减2
+            // getHeaderViewsCount()的作用就是获取到Header个数
+            mItemClickListener.onItemClick(adapterView, view, position - getHeaderViewsCount(), id);
+        }
+    }
+
+    public interface OnRefreshListener {
+
+
+        public void onRefresh();
+
+        public void onLoadMore();   // 加载更多数据
+    }
+
 }

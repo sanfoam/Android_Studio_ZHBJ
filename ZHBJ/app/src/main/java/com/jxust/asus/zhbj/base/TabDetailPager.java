@@ -1,21 +1,28 @@
 package com.jxust.asus.zhbj.base;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Color;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.jxust.asus.zhbj.NewsDetailActivity;
 import com.jxust.asus.zhbj.R;
 import com.jxust.asus.zhbj.domain.NewsData;
 import com.jxust.asus.zhbj.domain.TabData;
 import com.jxust.asus.zhbj.global.GlobalContants;
+import com.jxust.asus.zhbj.util.PrefUtils;
 import com.jxust.asus.zhbj.view.RefreshListView;
+import com.jxust.asus.zhbj.view.RefreshListView.OnRefreshListener;
 import com.lidroid.xutils.BitmapUtils;
 import com.lidroid.xutils.HttpUtils;
 import com.lidroid.xutils.ViewUtils;
@@ -57,6 +64,7 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
     private ArrayList<TabData.TopNewsData> mTopNewsList;        // 头条新闻数据集合
     private ArrayList<TabData.TabNewsData> mNewsList;          // 新闻数据集合
     private NewsAdapter mNewsAdapter;
+    private String mMoreUrl;            // 更多页面的地址
 
     public TabDetailPager(Activity activity, NewsData.NewsTabData newsTabData) {
         super(activity);
@@ -74,21 +82,64 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
 
         ViewUtils.inject(this, view);          // 对xUtils进行注入操作
         ViewUtils.inject(this, headerView);    // 对xUtils进行注入操作
-        // 由于在ViewPager中又绑定一个indicator，所以在设置滑动监听的时候要在indicator中设置监听
+        // 由于在ViewPager中又绑定一个indicator，
+        // 所以在设置滑动监听的时候要在indicator中设置监听
 //        mViewPager.setOnPageChangeListener(this);   // 设置滑动监听
 
         // 将头条新闻以头布局的形式加载给ListView
         lvList.addHeaderView(headerView);
 
         // 设置下拉刷新监听
-        lvList.setOnRefreshListener(new RefreshListView.OnRefreshListener() {
+        lvList.setOnRefreshListener(new OnRefreshListener() {
             @Override
             public void onRefresh() {
                 getDataFromServer();
             }
+
+            @Override
+            public void onLoadMore() {
+                if (mMoreUrl != null) {
+                    getMoreDataFromServer();    // 从服务端获取更多的数据
+                } else {
+                    Toast.makeText(mActivity, "最后一页了!", Toast.LENGTH_SHORT).show();
+                    lvList.onRefreshComplete(false);    // 收起加载更多的布局
+                }
+            }
         });
 
+        lvList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                System.out.println("被点击:" + position);
+
+                String ids = PrefUtils.getString(mActivity, "read_ids", "");
+                String readId = mNewsList.get(position).id;
+                if (!ids.contains(readId)) {   // 如果字符串中不包含这个id就将其加进ids中
+                    ids = ids + readId + ",";
+                    PrefUtils.setString(mActivity, "read_ids", ids);
+                }
+
+//                mNewsAdapter.notifyDataSetChanged();
+                changeReadState(view);  // 实现局部页面刷新,这个view就是被点击的Item的布局对象
+
+                // 跳转到新闻详情页
+                Intent intent = new Intent();
+                intent.setClass(mActivity, NewsDetailActivity.class);
+                intent.putExtra("url",mNewsList.get(position).url);
+                mActivity.startActivity(intent);
+            }
+    });
+
         return view;
+    }
+
+
+    /**
+     * 改变已读的颜色
+     */
+    private void changeReadState(View view){
+        TextView tvTitle = (TextView) view.findViewById(R.id.tv_title);
+        tvTitle.setTextColor(Color.GRAY);
     }
 
     @Override
@@ -101,6 +152,7 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
      *
      * @return
      */
+
     public void getDataFromServer() {
         HttpUtils utils = new HttpUtils();
         utils.send(HttpRequest.HttpMethod.GET, mUrl, new RequestCallBack<String>() {
@@ -109,7 +161,7 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
             public void onSuccess(ResponseInfo<String> responseInfo) {
                 String result = responseInfo.result;
                 System.out.println("这是页签详情页:" + result);
-                parseData(result);
+                parseData(result, false);
                 lvList.onRefreshComplete(true); // 在获取到服务器的数据后收起下拉刷新的控件
             }
 
@@ -123,30 +175,71 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
         });
     }
 
-    private void parseData(String result) {
+
+    /**
+     * 加载更多的数据
+     */
+    public void getMoreDataFromServer() {
+        HttpUtils utils = new HttpUtils();
+        utils.send(HttpRequest.HttpMethod.GET, mMoreUrl, new RequestCallBack<String>() {
+
+            @Override
+            public void onSuccess(ResponseInfo<String> responseInfo) {
+                String result = responseInfo.result;
+                parseData(result, true);
+                lvList.onRefreshComplete(true); // 在获取到服务器的数据后收起下拉刷新的控件
+            }
+
+            @Override
+            public void onFailure(HttpException error, String msg) {
+                Toast.makeText(mActivity, msg, Toast.LENGTH_SHORT).show();
+                error.printStackTrace();    // 打印失败日志
+                lvList.onRefreshComplete(false); // 在获取到服务器的数据后收起下拉刷新的控件
+            }
+
+        });
+    }
+
+
+    private void parseData(String result, boolean isMore) {
         Gson gson = new Gson();
         mTabDetailData = gson.fromJson(result, TabData.class);  // 解析页面详情页的数据
         System.out.println("页签详情页解析:" + mTabDetailData);
-        mTopNewsList = mTabDetailData.data.topnews;
 
-        mNewsList = mTabDetailData.data.news;
-
-        if (mTopNewsList != null) {
-            mViewPager.setAdapter(new TopNewsAdapter());
-            // 设置头条新闻的指示器
-            mIndicator.setViewPager(mViewPager);
-            mIndicator.setSnap(true);   // 支持快照显示
-            // 因为我们在原先的ViewPager的基础上又绑定了一个indicator，所以我们要在indicator中设置监听才有效
-            mIndicator.setOnPageChangeListener(this);   // 给indicator设置监听
-
-            mIndicator.onPageSelected(0);   // 主动设置到第0页，也就是在每次回到这个ViewPager的时候指示器重新定位到第一个点
-
-            tvTitle.setText(mTopNewsList.get(0).title);     // 将标题设置给ViewPager里的tvTitle
+        // 处理更多页面的逻辑
+        String more = mTabDetailData.data.more;
+        if (!TextUtils.isEmpty(more)) {
+            mMoreUrl = GlobalContants.SERVER_URL + more;
+        } else {
+            mMoreUrl = null;
         }
-        if (mNewsList != null) {
-            // 填充新闻列表数据
-            mNewsAdapter = new NewsAdapter();
-            lvList.setAdapter(mNewsAdapter);
+
+        if (!isMore) {
+            mTopNewsList = mTabDetailData.data.topnews;
+
+            mNewsList = mTabDetailData.data.news;
+
+            if (mTopNewsList != null) {
+                mViewPager.setAdapter(new TopNewsAdapter());
+                // 设置头条新闻的指示器
+                mIndicator.setViewPager(mViewPager);
+                mIndicator.setSnap(true);   // 支持快照显示
+                // 因为我们在原先的ViewPager的基础上又绑定了一个indicator，所以我们要在indicator中设置监听才有效
+                mIndicator.setOnPageChangeListener(this);   // 给indicator设置监听
+
+                mIndicator.onPageSelected(0);   // 主动设置到第0页，也就是在每次回到这个ViewPager的时候指示器重新定位到第一个点
+
+                tvTitle.setText(mTopNewsList.get(0).title);     // 将标题设置给ViewPager里的tvTitle
+            }
+            if (mNewsList != null) {
+                // 填充新闻列表数据
+                mNewsAdapter = new NewsAdapter();
+                lvList.setAdapter(mNewsAdapter);
+            }
+        } else {    // 如果是加载下一页，需要将数据追加给原来的集合
+            ArrayList<TabData.TabNewsData> news = mTabDetailData.data.news;
+            mNewsList.addAll(news);     // 将第二页的数据追加给集合
+            mNewsAdapter.notifyDataSetChanged();    // 刷新一下
         }
 
     }
@@ -263,6 +356,13 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
             holder.tvDate.setText(item.pubdate);
 
             mUtils.display(holder.ivPic, item.listimage);  // 将图片加载到iv_pic中
+
+            String ids = PrefUtils.getString(mActivity, "read_ids", "");
+            if(ids.contains(getItem(position).id)){ // 如果用户点击过这个新闻，就将新闻颜色变成灰色的
+                holder.tvTitle.setTextColor(Color.GRAY);
+            } else {        // 如果用户没有点击过这个新闻，就将这个新闻变成黑色
+                holder.tvTitle.setTextColor(Color.BLACK);
+            }
 
             return convertView;
         }
