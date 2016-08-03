@@ -119,6 +119,9 @@ public class ContentFragment extends BaseFragment {
 
     }
 
+    /**
+     * ViewPager的适配器
+     */
     class ContentAdapter extends PagerAdapter {
 
         @Override

@@ -28,6 +28,7 @@ public class BasePager {
     public FrameLayout flContent;   //内容
 
     public ImageButton btnMenu;     // 菜单按钮
+    public ImageButton btnPhoto;   // 组图切换按钮
 
     public BasePager(Activity activity) {
         mActivity = activity;
@@ -43,6 +44,8 @@ public class BasePager {
         flContent = (FrameLayout) mRootView.findViewById(R.id.fl_content);
         tvTitle = (TextView) mRootView.findViewById(R.id.tv_title);
         btnMenu = (ImageButton) mRootView.findViewById(R.id.btn_menu);
+
+        btnPhoto = (ImageButton) mRootView.findViewById(R.id.btn_photo);
 
         btnMenu.setOnClickListener(new View.OnClickListener() {
             @Override

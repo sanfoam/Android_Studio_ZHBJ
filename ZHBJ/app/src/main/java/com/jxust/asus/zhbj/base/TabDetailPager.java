@@ -3,9 +3,12 @@ package com.jxust.asus.zhbj.base;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.text.TextUtils;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -20,6 +23,7 @@ import com.jxust.asus.zhbj.R;
 import com.jxust.asus.zhbj.domain.NewsData;
 import com.jxust.asus.zhbj.domain.TabData;
 import com.jxust.asus.zhbj.global.GlobalContants;
+import com.jxust.asus.zhbj.util.CacheUtils;
 import com.jxust.asus.zhbj.util.PrefUtils;
 import com.jxust.asus.zhbj.view.RefreshListView;
 import com.jxust.asus.zhbj.view.RefreshListView.OnRefreshListener;
@@ -65,6 +69,8 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
     private ArrayList<TabData.TabNewsData> mNewsList;          // 新闻数据集合
     private NewsAdapter mNewsAdapter;
     private String mMoreUrl;            // 更多页面的地址
+
+    private Handler mHandler;
 
     public TabDetailPager(Activity activity, NewsData.NewsTabData newsTabData) {
         super(activity);
@@ -125,10 +131,10 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
                 // 跳转到新闻详情页
                 Intent intent = new Intent();
                 intent.setClass(mActivity, NewsDetailActivity.class);
-                intent.putExtra("url",mNewsList.get(position).url);
+                intent.putExtra("url", mNewsList.get(position).url);
                 mActivity.startActivity(intent);
             }
-    });
+        });
 
         return view;
     }
@@ -137,13 +143,18 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
     /**
      * 改变已读的颜色
      */
-    private void changeReadState(View view){
+    private void changeReadState(View view) {
         TextView tvTitle = (TextView) view.findViewById(R.id.tv_title);
         tvTitle.setTextColor(Color.GRAY);
     }
 
     @Override
     public void initData() {
+        String cache = CacheUtils.getCache(mUrl, mActivity);
+
+        if (!TextUtils.isEmpty(cache)) {  // 如果内存中有缓存就先调用内存中的缓存
+            parseData(cache, false); // 解析json数据
+        }
         getDataFromServer();
     }
 
@@ -163,6 +174,9 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
                 System.out.println("这是页签详情页:" + result);
                 parseData(result, false);
                 lvList.onRefreshComplete(true); // 在获取到服务器的数据后收起下拉刷新的控件
+
+                // 设置缓存
+                CacheUtils.setCache(mUrl, result, mActivity);
             }
 
             @Override
@@ -198,6 +212,7 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
             }
 
         });
+        mNewsAdapter.notifyDataSetChanged();
     }
 
 
@@ -235,6 +250,38 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
                 // 填充新闻列表数据
                 mNewsAdapter = new NewsAdapter();
                 lvList.setAdapter(mNewsAdapter);
+            }
+
+            // 自动轮播条显示
+            if (mHandler == null) {
+                mHandler = new Handler() {
+
+                    private int currentItem;
+
+                    @Override
+                    public void handleMessage(Message msg) {
+
+                        currentItem = mViewPager.getCurrentItem();
+
+                        if (currentItem < mTopNewsList.size() - 1) {   // 说明还有下一页
+                            currentItem++;  // 跳到下一个页面
+                        } else {
+                            currentItem = 0;
+                        }
+                        // TODO 新建了一个线程，从而避免了此操作抢线程,但是有个问题，就是自动轮播没有用了
+                        // TODO 主要原因就是Handler线程和Thread之间没有进行数据的交换
+                        new Thread(){
+                            @Override
+                            public void run() {
+                                super.run();
+                                // 在另外一个线程中处理,否则会报错java.lang.IllegalStateException
+                                mViewPager.setCurrentItem(currentItem);     // 切换到下一个页面
+                            }
+                        }.interrupt();
+                        mHandler.sendEmptyMessageDelayed(0, 3000);  // 延时3秒后发消息,形成循环
+                    }
+                };
+                mHandler.sendEmptyMessageDelayed(0, 3000);  // 这样子就会隔3秒以后自动跳到上面的handlerMessage里面
             }
         } else {    // 如果是加载下一页，需要将数据追加给原来的集合
             ArrayList<TabData.TabNewsData> news = mTabDetailData.data.news;
@@ -298,12 +345,40 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
             utils.display(image, topNewsData.topimage);  // 传递imageView对象和图片地址
 
             container.addView(image);
+
+            image.setOnTouchListener(new TopNewsTouchListener());   // 设置触摸监听
             return image;
         }
 
         @Override
         public void destroyItem(ViewGroup container, int position, Object object) {
             container.removeView((View) object);
+        }
+    }
+
+    /**
+     * 头条新闻的触摸监听
+     */
+    class TopNewsTouchListener implements View.OnTouchListener {
+
+        @Override
+        public boolean onTouch(View view, MotionEvent motionEvent) {
+            switch (motionEvent.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    System.out.println("按下");
+                    mHandler.removeCallbacksAndMessages(null);  // 删除Handler的所有消息
+                    break;
+                case MotionEvent.ACTION_CANCEL:         // 移动事件被取消
+                    System.out.println("事件取消");
+                    mHandler.sendEmptyMessageDelayed(0, 3000);
+                    break;
+                case MotionEvent.ACTION_UP:
+                    System.out.println("抬起");
+                    mHandler.sendEmptyMessageDelayed(0, 3000);   // 让Handler继续发消息
+                    break;
+
+            }
+            return true;
         }
     }
 
@@ -358,7 +433,7 @@ public class TabDetailPager extends BaseMenuDetailPager implements ViewPager.OnP
             mUtils.display(holder.ivPic, item.listimage);  // 将图片加载到iv_pic中
 
             String ids = PrefUtils.getString(mActivity, "read_ids", "");
-            if(ids.contains(getItem(position).id)){ // 如果用户点击过这个新闻，就将新闻颜色变成灰色的
+            if (ids.contains(getItem(position).id)) { // 如果用户点击过这个新闻，就将新闻颜色变成灰色的
                 holder.tvTitle.setTextColor(Color.GRAY);
             } else {        // 如果用户没有点击过这个新闻，就将这个新闻变成黑色
                 holder.tvTitle.setTextColor(Color.BLACK);

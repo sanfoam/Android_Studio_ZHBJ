@@ -284,9 +284,14 @@ public class TabPageIndicator extends HorizontalScrollView implements PageIndica
         }
     }
 
+    /**
+     * 事件分发，请求父控件及祖宗控件不要拦截事件
+     * @param ev
+     * @return
+     */
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        getParent().requestDisallowInterceptTouchEvent(true);
+        getParent().requestDisallowInterceptTouchEvent(true);       // 用getParent去请求
         return super.dispatchTouchEvent(ev);
     }
 }

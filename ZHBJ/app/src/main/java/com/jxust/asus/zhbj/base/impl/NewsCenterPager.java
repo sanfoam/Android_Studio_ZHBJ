@@ -1,7 +1,9 @@
 package com.jxust.asus.zhbj.base.impl;
 
 import android.app.Activity;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -15,6 +17,7 @@ import com.jxust.asus.zhbj.base.menudetail.TopicMenuDetailPager;
 import com.jxust.asus.zhbj.domain.NewsData;
 import com.jxust.asus.zhbj.fragment.LeftMenuFragment;
 import com.jxust.asus.zhbj.global.GlobalContants;
+import com.jxust.asus.zhbj.util.CacheUtils;
 import com.lidroid.xutils.HttpUtils;
 import com.lidroid.xutils.exception.HttpException;
 import com.lidroid.xutils.http.ResponseInfo;
@@ -44,7 +47,12 @@ public class NewsCenterPager extends BasePager {
     public void initData() {
         Log.i("Main", "初始化我们的新闻数据");
         setSlidingMenuEnable(true);     // 打开侧边栏
-        getDataFromServer();
+
+        String cache = CacheUtils.getCache(GlobalContants.CATEGORIES_URL, mActivity);// 获取缓存
+        if (!TextUtils.isEmpty(cache)) {    // 如果缓存存在，直接解析数据，无需访问访问网络
+            parseData(cache);   // 解析json数据
+        }
+        getDataFromServer();    // 不管有没有缓存，都获取下最新数据，保证数据最新
     }
 
     /**
@@ -63,6 +71,8 @@ public class NewsCenterPager extends BasePager {
                 String result = (String) responseInfo.result;    // 得到的结果
 //              System.out.println("返回结果" + result);
                 parseData(result);      // 解析网络数据
+                // 设置缓存
+                CacheUtils.setCache(GlobalContants.CATEGORIES_URL, result, mActivity);
             }
 
             // 访问失败，在主线程运行
@@ -94,7 +104,7 @@ public class NewsCenterPager extends BasePager {
         mPagers = new ArrayList<BaseMenuDetailPager>();
         mPagers.add(new NewsMenuDetailPager(mActivity, mNewsData.data.get(0).children));
         mPagers.add(new TopicMenuDetailPager(mActivity));
-        mPagers.add(new PhotoMenuDetailPager(mActivity));
+        mPagers.add(new PhotoMenuDetailPager(mActivity,btnPhoto));
         mPagers.add(new InteractMenuDetailPager(mActivity));
 
         if (flag) {
@@ -118,6 +128,11 @@ public class NewsCenterPager extends BasePager {
         tvTitle.setText(menuData.title);
 
         pager.initData();   // 初始化当前页面的数据
+        if(pager instanceof PhotoMenuDetailPager){
+            btnPhoto.setVisibility(View.VISIBLE);   // 将组图的那个图标变为可见
+        }else{
+            btnPhoto.setVisibility(View.GONE);      // 将组图的那个图标变为不可见
+        }
     }
 
 }

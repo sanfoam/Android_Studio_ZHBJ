@@ -14,6 +14,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
+import com.jxust.asus.zhbj.util.DensityUtils;
 import com.jxust.asus.zhbj.util.PrefUtils;
 
 import java.util.ArrayList;
@@ -129,10 +130,12 @@ public class GuideActivity extends Activity {
             point.setBackgroundResource(R.drawable.shape_point_gray);   // 设置引导页默认圆点
 
             // 父控件是什么类型的，里面的LayoutParams就用什么类型的
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(10, 10);    // 限制小圆点的尺寸
+            // DensityUtils.dp2px()方法的作用:将每个设备的都设定为10dp的格式,从而达到每个屏幕的像素都可以适配成功
+            LinearLayout.LayoutParams params = new LinearLayout
+                    .LayoutParams(DensityUtils.dp2px(this,10), DensityUtils.dp2px(this,10));    // 限制小圆点的尺寸
 
             if (i > 0) {
-                params.leftMargin = 10;         // 设置圆点间隔
+                params.leftMargin = DensityUtils.dp2px(this,10);         // 设置圆点间隔
             }
 
             point.setLayoutParams(params);      // 设置圆点的尺寸
